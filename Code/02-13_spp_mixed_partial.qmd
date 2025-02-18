@@ -45,7 +45,7 @@ glimpse(spp_rcbd_df)
 # c) Wrangling
 ```{r rcbd_dfw}
 spp_rcbd_dfw <- spp_rcbd_df %>%
-  mutate(block = factor(block),
+  mutate(rep = factor(rep),
          nrate_kgha = factor(nrate_kgha),
          krate_kgha = factor(krate_kgha) 
          ) %>%
@@ -109,7 +109,10 @@ We have 2 random variance component from the split-plot because we have 2 differ
 options(contrasts = c("contr.sum", "contr.poly"))
 
 # Model fitting
-spp_rcbd_mix_mod 
+spp_rcbd_mix_mod <- lmer(yield_kgha ~ krate_kgha*nrate_kgha + (1|rep/krate_kgha),
+                         data = spp_rcbd_dfw)
+
+
 
 # Summary
 summary(spp_rcbd_mix_mod)
@@ -155,7 +158,7 @@ One difference in mixed models is that the 3 first assumptions are also applied 
 
 ### Block random effects are iid ~ N(0,var_a)  
 ```{r randeff_block}
-randeff_block
+randeff_block <- ranef(spp_rcbd_mix_mod)$rep
 
 randeff_block
 ```
@@ -178,7 +181,7 @@ Nothing to worry here, especially since we only have 4 points.
 
 ### Block:krate random effects are iid ~ N(0,var_b)  
 ```{r randeff_block}
-randeff_blockkrate 
+randeff_blockkrate <- ranef(spp_rcbd_mix_mod)$`krate_kgha:rep`
 
 randeff_blockkrate
 ```
