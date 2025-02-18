@@ -266,14 +266,16 @@ When we ask for the interaction means (like in chunk above), the emmean error is
 What happens with the emmean error if we ask for the emmean of the main effects of K and N rate separately? 
 
 ```{r k rate means}
-
+emmeans(spp_rcbd_mix_mod, 
+                                  ~krate_kgha)
 ```
 The SE of the whole-plot treatment factor (k rate) is **232**.
 
 What about for the split-plot treatment factor (n rate)?  
 
 ```{r n rate means }
-
+emmeans(spp_rcbd_mix_mod, 
+                                  ~nrate_kgha)
 ```
 It is 209.  
 
