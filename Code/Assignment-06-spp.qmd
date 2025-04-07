@@ -1,0 +1,175 @@
+---
+title: "Assignment 6 - Split-plot randomization"
+author: "Ruben Vinueza"  
+format:
+  html:
+    code-fold: false
+    embed-resources: true
+    toc: true
+    number-sections: false
+    theme: cerulean
+---
+
+# Introduction  
+This assignment will ask you to conduct a split-plot RCBD randomization. 
+
+For that, you will first need to watch (and code along with) the following split-plot randomization video:
+
+- split-plot randomization: https://youtu.be/rXTp3Vw_770?si=MajBK1aZ221orfpa&t=3401 (starts at 00:56:41, watch till end, about 50-min total)
+
+- The partial script for the video above is in our GitHub repository, 04-classcode, **02-13_spp_randomization_partial.qmd**.
+
+
+**AFTER watching the video and developing the code in class**, then start working on this HW assignment.  
+
+The different sections representing what we did in class were left in the script to provide you a scaffold to start from.  
+
+# Instructions  
+  - Move this script into the `code` subfolder of your `05_spp` project folder  
+  - On this script, fill your name under the `title` section of the YAML  
+
+# a) Setup  
+Here is where we load the packages we will use.  
+Make sure to load each package in the chunk below.  
+```{r setup, warning=FALSE, message=FALSE}
+library(tidyverse)
+
+```
+
+# b) Treatment design  
+# Split-plot in RCBD  
+## WP randomization  
+```{r wp_rcbd_rand}
+#Setting seed to get some randomization result every time 
+set.seed(930)
+
+wp_rcbd_rand <- crossing(krate_kgha = c(0,30,60),
+                         block = 1:4) %>%
+  
+arrange(block) %>%
+# Randomizing Whole Plot treatment factor to blocks (restricted)
+group_by(block) %>%
+mutate(krate_kgha = sample (krate_kgha)) %>%
+#Creating WP plot numbers
+mutate(wplot = (block*100)+ 1:3) %>% 
+  ungroup()
+
+wp_rcbd_rand
+```
+How many rows do we have in the object above? Why?
+
+## SP randomization  
+Randomization of the split-plot treatment factor (N rate) to the WP treatment plots.
+```{r sp_rcbd_rand}
+sp_rcbd_rand <- crossing(nrate_kgha = c(0,100,200),
+                         wplot = wp_rcbd_rand$wplot
+                         ) %>%
+  arrange(wplot) %>%
+ # Randomizing SP treatment factor to WP plots (restricted)
+ group_by(wplot) %>%
+ mutate(nrate_kgha = sample(nrate_kgha)) %>%
+ # Creating SP plot numbers
+ mutate(splot = paste0(wplot,"-",1:3)) %>%
+ ungroup()
+
+sp_rcbd_rand
+```
+
+## Joining WP and SP into one object
+```{r spp_rcbd_rand}
+spp_rcbd_rand <- wp_rcbd_rand %>%
+  right_join(sp_rcbd_rand) %>%
+  mutate(trtname = paste0(krate_kgha, "+", nrate_kgha))
+
+spp_rcbd_rand
+```
+How many rows in the object above? Why?
+
+Inspecting block 1. 
+```{r}
+spp_rcbd_rand %>%
+  filter(block ==1)
+```
+## Plot layout  
+```{r spp_rcbd_layout}
+spp_rcbd_layout <- spp_rcbd_rand %>%
+  # Defining number of rows and columns in the field for plotting purposes
+  mutate(row = rep(1:4, each = 9)) %>% 
+  mutate(col = rep(seq(from = 1,
+                       to = 9, #total number of treatments,
+                       by = 1),
+                   times = 4 #total number of blocks
+                       )) %>%
+  # Creating plot and trtname labels for plotting 
+  mutate(lab = paste0(splot, "\n", trtname))
+
+spp_rcbd_layout
+```
+
+```{r spp rcbd map}
+ggplot(data = spp_rcbd_layout, aes(x = row,
+                                   y = -col)) +
+   geom_tile(aes(fill = factor(nrate_kgha)),
+            color = "black",
+            show.legend = F
+            ) +
+  geom_tile(aes(color = krate_kgha),
+            show.legend = F,
+            size = 2,
+            linetype = 2,
+            fill = NA
+            ) +
+  scale_fill_manual(values = c("#e5f0db",
+                               "#b1d095",
+                               "#5e813f")) +
+  geom_text(aes(label = splot), fontface = "bold", vjust = -.8) +
+  geom_text(aes(label = trtname), vjust = 1) +
+  labs(title = "Split-plot RCBD randomization of a/n3 K (whole-plote) x 3 N (split-plot) treatment design") +
+  theme_void()
+ 
+```
+
+# Exporting to file  
+
+```{r}
+spp_rcbd_rand %>%
+  # Rearranging columns 
+  dplyr::select(block, wplot, krate_kgha,
+                splot, nrate_kgha,
+                trtname) %>%
+  write_csv("../output/spp_rcbd_randomization_table.csv")
+```
+
+```{r}
+ggsave("../output/spp_rcbd_layoutmap.png",
+       width = 6,
+       height = 5,
+       bg = "white"
+       )
+```
+# Submitting your work  
+Once you have developed all the code and answers, make sure to Render this quarto file.  
+
+**Notes on rendering**:  
+
+- Make sure to render your work and inspect how the final html look like.  
+- If it does not look professional for whatever reason, then fix the issue, re-render it, recheck.  
+- Only send me your work once your html file looks professional.  
+  - **DO NOT** delete the file's heading levels (# and ##). They set up the proper heading 1 and 2 levels, and I use them to guide my grading.  
+  - If a given chunk is also outputting warnings or messages, inhibit this behavior by changing the chunk options `message` and `warning` to `FALSE` (I'll demo this in a moment).  
+  
+  - If, after rendered, 2 lines of text are connected and you wish to "break line" between them, add 2 extra spaces after the first one (I'lld demo this in a moment).  
+
+After rendering, an .html file will be created on your `code` folder.  
+
+Rename this file to `Assignment-06-spp-LASTNAME.html`.    
+
+For ex., mine would be `Assignment-06-spp-Bastos.html`.
+
+Submit your work by uploading the **html** file to **eLC Assigment #6 - Split-plot randomization** by Feb 20 11:59 pm.  
+  
+
+
+
+
+
